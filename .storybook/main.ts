@@ -1,19 +1,21 @@
-import type { StorybookConfig } from "@storybook/react-vite";
+import { StorybookConfig } from "@storybook/react-vite";
 
 const config: StorybookConfig = {
-  stories: ["../src/components/**/*.stories.@(ts|tsx)"],
+  stories: ["../src/**/*.stories.@(js|jsx|ts|tsx|mdx)"],
   addons: [
+    "@storybook/addon-links",
     "@storybook/addon-essentials",
-    "@storybook/addon-a11y",
-    "@storybook/addon-docs",
+    "@storybook/addon-interactions",
   ],
   framework: {
     name: "@storybook/react-vite",
     options: {},
   },
-  docs: {
-    autodocs: "tag",
+  viteFinal: async (config) => {
+    // Ensure PostCSS & Tailwind are loaded
+    config.css = config.css || {};
+    config.css.postcss = config.css.postcss || {};
+    return config;
   },
 };
-
 export default config;

@@ -1,114 +1,56 @@
 import { useState } from "react";
 import { useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 
-export interface Task {
-  id: string;
-  title: string;
-  priority?: "low" | "medium" | "high" | "urgent";
-  tags?: string[];
-  dueDate?: string;
-}
-
-export interface Column {
-  id: string;
-  title: string;
-  tasks: Task[];
-}
-
-const initialColumns: Column[] = [
-  {
-    id: "todo",
-    title: "To Do",
-    tasks: [
-      {
-        id: "1",
-        title: "Implement drag and drop",
-        priority: "high",
-        tags: ["frontend", "feature"],
-        dueDate: "Jan 20",
-      },
-      {
-        id: "2",
-        title: "Design task modal",
-        priority: "medium",
-        tags: ["design", "ui"],
-        dueDate: "Jan 18",
-      },
-    ],
-  },
-  {
-    id: "in-progress",
-    title: "In Progress",
-    tasks: [
-      {
-        id: "3",
-        title: "Setup TypeScript",
-        priority: "urgent",
-        tags: ["setup", "typescript"],
-      },
-    ],
-  },
-  {
-    id: "review",
-    title: "Review",
-    tasks: [],
-  },
-  {
-    id: "done",
-    title: "Done",
-    tasks: [
-      {
-        id: "4",
-        title: "Create project structure",
-        priority: "low",
-        tags: ["setup"],
-        dueDate: "Jan 9",
-      },
-      {
-        id: "5",
-        title: "Install dependencies",
-        priority: "low",
-        tags: ["setup"],
-      },
-    ],
-  },
-];
-
 export const useSortableKanban = () => {
-  const [columns, setColumns] = useState(initialColumns);
+  const [columns, setColumns] = useState([
+    {
+      id: "todo",
+      title: "To Do",
+      tasks: [
+        { id: "1", title: "Setup project" },
+        { id: "2", title: "Add Tailwind CSS" },
+      ],
+    },
+    {
+      id: "doing",
+      title: "In Progress",
+      tasks: [{ id: "3", title: "Build Kanban UI" }],
+    },
+    {
+      id: "done",
+      title: "Done",
+      tasks: [{ id: "4", title: "Integrate Storybook" }],
+    },
+  ]);
+
   const sensors = useSensors(useSensor(PointerSensor));
 
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const fromColumnIndex = columns.findIndex((col) =>
+    const sourceColumn = columns.find((col) =>
       col.tasks.some((t) => t.id === active.id)
     );
-    const toColumnIndex = columns.findIndex(
-      (col) => col.id === over.id || col.tasks.some((t) => t.id === over.id)
+    const targetColumn = columns.find((col) =>
+      col.tasks.some((t) => t.id === over.id)
     );
 
-    if (fromColumnIndex === -1 || toColumnIndex === -1) return;
+    if (!sourceColumn || !targetColumn) return;
 
-    const fromColumn = columns[fromColumnIndex];
-    const toColumn = columns[toColumnIndex];
-    const task = fromColumn.tasks.find((t) => t.id === active.id);
-    if (!task) return;
+    const sourceTasks = sourceColumn.tasks.filter((t) => t.id !== active.id);
+    const movedTask = sourceColumn.tasks.find((t) => t.id === active.id)!;
+    const targetTasks = [...targetColumn.tasks, movedTask];
 
-    const updatedFrom = {
-      ...fromColumn,
-      tasks: fromColumn.tasks.filter((t) => t.id !== active.id),
-    };
-    const updatedTo = {
-      ...toColumn,
-      tasks: [...toColumn.tasks, task],
-    };
-
-    const newColumns = [...columns];
-    newColumns[fromColumnIndex] = updatedFrom;
-    newColumns[toColumnIndex] = updatedTo;
-    setColumns(newColumns);
+    setColumns((prev) =>
+      prev.map((col) =>
+        col.id === sourceColumn.id
+          ? { ...col, tasks: sourceTasks }
+          : col.id === targetColumn.id
+          ? { ...col, tasks: targetTasks }
+          : col
+      )
+    );
   };
 
   return { columns, sensors, handleDragEnd };
